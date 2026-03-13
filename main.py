@@ -10,9 +10,15 @@ class PromptRequest(BaseModel):
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
+# Health check endpoint
+@app.get("/")
+def home():
+    return {"message": "Salesforce LLM API running"}
+
 @app.post("/generate")
 def generate_text(request: PromptRequest, authorization: str = Header(None)):
 
+    # Authentication check
     if authorization != "Bearer salesforce-secret":
         raise HTTPException(status_code=401, detail="Unauthorized")
 
@@ -31,6 +37,9 @@ def generate_text(request: PromptRequest, authorization: str = Header(None)):
     }
 
     response = requests.post(url, headers=headers, json=payload)
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=500, detail="Groq API Error")
 
     data = response.json()
 
