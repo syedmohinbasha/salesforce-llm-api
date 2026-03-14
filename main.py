@@ -15,12 +15,8 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 def home():
     return {"message": "Salesforce LLM API running"}
 
-@app.post("/chat/completions")
-def generate_text(request: PromptRequest, authorization: str = Header(None)):
-
-    # Authentication check
-    if authorization != "Bearer salesforce-secret":
-        raise HTTPException(status_code=401, detail="Unauthorized")
+@app.post("/generate")
+def generate_text(request: PromptRequest):
 
     url = "https://api.groq.com/openai/v1/chat/completions"
 
