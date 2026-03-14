@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import requests
 import os
@@ -8,9 +8,8 @@ app = FastAPI()
 class PromptRequest(BaseModel):
     prompt: str
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
 
-# Health check endpoint
 @app.get("/")
 def home():
     return {"message": "Salesforce LLM API running"}
@@ -18,34 +17,34 @@ def home():
 @app.post("/generate")
 def generate_text(request: PromptRequest):
 
-    url = "https://api.groq.com/openai/v1/chat/completions"
+    url = "https://api.replicate.com/v1/predictions"
 
     headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Authorization": f"Token {REPLICATE_API_TOKEN}",
         "Content-Type": "application/json"
     }
 
     payload = {
-        "model": "llama-3.1-8b-instant",
-        "messages": [
-            {"role": "user", "content": request.prompt}
-        ]
+        "version": "meta/llama-3-8b-instruct",
+        "input": {
+            "prompt": request.prompt
+        }
     }
 
     response = requests.post(url, headers=headers, json=payload)
 
-    if response.status_code != 200:
-        raise HTTPException(status_code=500, detail="Groq API Error")
+    if response.status_code != 201:
+        raise HTTPException(status_code=500, detail=response.text)
 
-    data = response.json()
+    prediction = response.json()
 
     return {
-    "choices": [
-        {
-            "message": {
-                "role": "assistant",
-                "content": data["choices"][0]["message"]["content"]
+        "choices": [
+            {
+                "message": {
+                    "role": "assistant",
+                    "content": str(prediction)
+                }
             }
-        }
-    ]
-}
+        ]
+    }
