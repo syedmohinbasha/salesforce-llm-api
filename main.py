@@ -25,9 +25,10 @@ def generate_text(request: PromptRequest):
     }
 
     payload = {
-        "version": "meta/llama-3-8b-instruct",
+        "model": "meta/meta-llama-3-8b-instruct",
         "input": {
-            "prompt": request.prompt
+            "prompt": request.prompt,
+            "max_new_tokens": 200
         }
     }
 
