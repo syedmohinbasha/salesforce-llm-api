@@ -15,7 +15,7 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 def home():
     return {"message": "Salesforce LLM API running"}
 
-@app.post("/generate")
+@app.post("/chat/completions")
 def generate_text(request: PromptRequest, authorization: str = Header(None)):
 
     # Authentication check
