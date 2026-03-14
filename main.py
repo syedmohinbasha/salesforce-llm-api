@@ -44,5 +44,12 @@ def generate_text(request: PromptRequest, authorization: str = Header(None)):
     data = response.json()
 
     return {
-        "response": data["choices"][0]["message"]["content"]
-    }
+    "choices": [
+        {
+            "message": {
+                "role": "assistant",
+                "content": data["choices"][0]["message"]["content"]
+            }
+        }
+    ]
+}
