@@ -1,51 +1,43 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-import requests
+from flask import Flask, request, jsonify
+from groq import Groq
 import os
 
-app = FastAPI()
+app = Flask(__name__)
 
-class PromptRequest(BaseModel):
-    prompt: str
+# Get API key safely
+api_key = os.environ.get("GROQ_API_KEY")
 
-REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
+if not api_key:
+    raise ValueError("GROQ_API_KEY environment variable not set")
 
-@app.get("/")
+client = Groq(api_key=api_key)
+
+@app.route("/generate", methods=["POST"])
+def generate():
+    data = request.json
+    prompt = data.get("prompt")
+
+    if not prompt:
+        return jsonify({"error": "No prompt provided"}), 400
+
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[{"role": "user", "content": prompt}]
+        )
+
+        output = response.choices[0].message.content
+        return jsonify({"response": output})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/")
 def home():
-    return {"message": "Salesforce LLM API running"}
+    return "Groq LLM API is running"
 
-@app.post("/generate")
-def generate_text(request: PromptRequest):
 
-    url = "https://api.replicate.com/v1/predictions"
-
-    headers = {
-        "Authorization": f"Token {REPLICATE_API_TOKEN}",
-        "Content-Type": "application/json"
-    }
-
-    payload = {
-        "model": "meta/meta-llama-3-8b-instruct",
-        "input": {
-            "prompt": request.prompt,
-            "max_new_tokens": 200
-        }
-    }
-
-    response = requests.post(url, headers=headers, json=payload)
-
-    if response.status_code != 201:
-        raise HTTPException(status_code=500, detail=response.text)
-
-    prediction = response.json()
-
-    return {
-        "choices": [
-            {
-                "message": {
-                    "role": "assistant",
-                    "content": str(prediction)
-                }
-            }
-        ]
-    }
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
